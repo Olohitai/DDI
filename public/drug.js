@@ -1,6 +1,4 @@
 function init() {
-  // your JavaScript code here
-
   const clearButton = document.getElementById("clear-all-button");
   const noInteraction = document.getElementById("no-interaction");
   const errorMessage = document.getElementById("error-message");
@@ -67,12 +65,28 @@ function init() {
     // check if the interactions are present in the window object
     if (window.interactions.length === 0) {
       // clear the interactions from the drug-results element
-      drugResult.innerHTML = "No interactions found";
+      drugResult.innerHTML = `<h3 class="no__interactions"> No interactions found</h3>`;
     } else {
       // create a string of HTML to display the interactions
       console.log(window.interactions);
       const html = window.interactions
-        .map((interaction) => `<p>${interaction}</p>`)
+        .map((interaction) => {
+          return `
+          <div class="interaction content">
+          <p data-rxcui="${
+            interaction.rxcui1
+          }"class="interaction__title mb-3">${capitalizeFirstLetter(
+            interaction.drug1Name
+          )} &nbsp;</p><i class="fa-solid fa-link interaction__icon"></i><p class=interaction__title mb-3> ${capitalizeFirstLetter(
+            interaction.drug2Name
+          )}&nbsp;</p>
+            <p class="interaction__description"">${interaction.description}</p>
+            
+          </div>
+        `;
+
+          `<p>${interaction.drug1Name} and ${interaction.drug2Name} have the following interaction: ${interaction.description}</p>`;
+        })
         .join("");
       drugResult.innerHTML = html;
     }
@@ -96,12 +110,17 @@ function init() {
   //     });
   //   }
   // });
+  function capitalizeFirstLetter(string) {
+    string = string.toLowerCase();
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  }
 
   const icons = document.querySelectorAll(".fa-xmark");
   icons.forEach((icon) => {
     icon.addEventListener("click", (event) => {
       errorMessage.innerHTML = "";
       const drug = event.target.dataset.drug;
+
       fetch(`/drugs/${drug}`, {
         method: "DELETE",
         headers: {
@@ -111,7 +130,8 @@ function init() {
         // const noInteraction = noInteraction;
         if (drugResult.innerHTML !== "") {
           const updatedInteractions = window.interactions.filter(
-            (interaction) => !interaction.toLowerCase().includes(drug)
+            (interaction) =>
+              !interaction.description.toLowerCase().includes(drug)
           );
 
           window.interactions = updatedInteractions;

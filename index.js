@@ -6,9 +6,10 @@ const path = require("path");
 const session = require("express-session");
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
-const drugList = [];
+
 let rxcuis = [];
 let alreadyFetched = []; // array to store drugs that have already been fetched
+let interactions = [];
 // use the session middleware
 app.use(
   session({
@@ -59,7 +60,6 @@ app.post("/search", async (req, res) => {
       error: "You can only search for a maximum of 5 drugs at a time.",
       drugs: req.session.drugs,
     });
-    console.log("one a time");
   }
 
   async function fetchDrug(drugName) {
@@ -95,6 +95,7 @@ app.post("/search", async (req, res) => {
 
 app.post("/check-interactions", async (req, res) => {
   const rxcuiString = rxcuis.join("+");
+  console.log(rxcuiString);
 
   // send an HTTP request to the Interaction API endpoint to retrieve the interaction information
   const response = await fetch(
@@ -104,7 +105,6 @@ app.post("/check-interactions", async (req, res) => {
 
   // const interactionDescriptions = [];
 
-  const interactionsSet = new Set();
   if (data.fullInteractionTypeGroup) {
     // Loop through the fullInteractionTypeGroup array
     for (const fullInteractionTypeGroup of data.fullInteractionTypeGroup) {
@@ -115,8 +115,23 @@ app.post("/check-interactions", async (req, res) => {
         for (const fullInteractionType of fullInteractionTypeGroup.fullInteractionType) {
           // Loop through the interactionPair array
           for (const interactionPair of fullInteractionType.interactionPair) {
-            // Get the description property and add it to the interactionsSet
-            interactionsSet.add(interactionPair.description);
+            // For each interactionPair, create an object with the following properties:
+            // - drug1Name: the name of the first drug
+            // - drug2Name: the name of the second drug
+            // - description: the description of the interaction
+            // - severity: the severity of the interaction
+            // Add this object to the interactions array
+            interactions.push({
+              drug1Name:
+                interactionPair.interactionConcept[0].minConceptItem.name,
+              drug2Name:
+                interactionPair.interactionConcept[1].minConceptItem.name,
+              description: interactionPair.description,
+              rxcui1:
+                interactionPair.interactionConcept[0].minConceptItem.rxcui,
+              rxcui2:
+                interactionPair.interactionConcept[1].minConceptItem.rxcui,
+            });
           }
         }
       }
@@ -127,12 +142,21 @@ app.post("/check-interactions", async (req, res) => {
     // interactionDescriptions = [];
   }
 
+  // Create a new Set to store unique interactions
+  const interactionsSet = new Set();
+
+  interactions = interactions.filter((interaction) => {
+    if (interactionsSet.has(interaction.description)) {
+      return false;
+    } else {
+      interactionsSet.add(interaction.description);
+      return true;
+    }
+  });
   // Convert the Set to an array
-  const interactionDescriptions = [...interactionsSet];
+  const interactionDescriptions = [...interactions];
 
   console.log(interactionDescriptions); // ['The risk or severity of renal failure, hypotension, and hyperkalemia can be increased when Lisinopril is combined with Losartan.']
-
-  // console.log(interactionDescriptions); // ['Acetaminophen may decrease the excretion rate of Lisinopril which could result in a higher serum level.', 'The risk or severity of renal failure, hypotension, and hyperkalemia can be increased when Lisinopril is combined with Losartan']
 
   // // send the interaction information back to the client in the response
   return res.send({
@@ -142,11 +166,12 @@ app.post("/check-interactions", async (req, res) => {
 
 app.delete("/drugs/:drug", (req, res) => {
   const { drug } = req.params;
-  console.log(drug);
+
   req.session.drugs = req.session.drugs.filter((d) => d !== drug);
   alreadyFetched = alreadyFetched.filter((d) => d !== drug);
   console.log(`This is alreaFetched array ${alreadyFetched}`);
   console.log(`This is sess array ${req.session.drugs}`);
+
   res.sendStatus(200);
 });
 

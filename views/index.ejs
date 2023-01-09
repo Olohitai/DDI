@@ -28,14 +28,13 @@
                 <label for="drugs" class="sr-only">Enter a drug name:</label>
                 <input type="text" id="drugs" name="drugs" placeholder="Enter a drug name">
 
-                <button type="submit" id="submit-button" class="btn btn-primary mb-2"
-                    style="display:none;">Search</button>
+                <button type="submit" id="submit-button" style="display: none;">Search</button>
             </form>
         </div>
 
-
-
-
+        <!-- <button type="submit" id="check-interactions" disabled>Check
+            Interactions</button>
+        <button type="submit" id="clear-all-button" class="btn btn-sm btn-outline-primary">CLEAR</button> -->
 
         <% if (typeof drugs !=='undefined' ) { %>
 
@@ -52,14 +51,14 @@
             <div id="drug-list">
 
                 <% let uniqueDrugs=[...new Set(drugs)]; let displayDrugs=uniqueDrugs.slice(0, 5);%>
-                    <% displayDrugs.forEach(function(drug) { %>
+                    <% displayDrugs.forEach(function(drug, index) { %>
                         <p>
-                            <%= drug %> <i class="fa-regular fa-xmark" data-drug="<%= drug %>"></i>
+                            <%= drug %> <i class="fa-regular fa-xmark" data-drug="<%= drug %>"></i><i
+                                    class="fa-solid fa-circle-minus"></i>
                         </p>
                         <% }); %>
 
             </div>
-
 
             <button type="submit" id="check-interactions" disabled>Check
                 Interactions</button>
@@ -85,8 +84,10 @@
 
                             <script>init()</script>
 
+
                             <% } %>
     </div>
+
 
 </body>
 
